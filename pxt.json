@@ -1,0 +1,22 @@
+{
+    "name": "RB-TFT2.0",
+    "version": "1.0.0",
+    "description": "MakeCode Package for the RB-TFT2.0 (ST7735 2.0' TFT Display).",
+    "license": "MIT",
+    "dependencies": {
+        "core": "*",
+        "microbit": "*"
+    },
+    "files": [
+        "README.md",
+        "RB-TFT20.ts",
+        "_locales/de/rb-tft20-strings.json",
+        "_locales/de/rb-tft20-jsdoc-strings.json"
+    ],
+    "testFiles": [
+        "test.ts"
+    ],
+    "supportedTargets": [
+        "microbit"
+    ]
+}

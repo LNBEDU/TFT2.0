@@ -51,6 +51,27 @@ enum Color {
      let TFTWIDTH = 240
      let TFTHEIGHT = 320
 
+     // --- Pin configuration (micro:bit V2 recommended) ---
+     // SPI: SCK=P13, MISO=P14(not used by LCD), MOSI=P15
+     // Default wiring for this library:
+     //   LCD SCL(SCK) -> P13
+     //   LCD SDA(MOSI)-> P15
+     //   LCD DC      -> P8
+     //   LCD RES(RST)-> P16
+     //   LCD CS      -> GND (always selected)
+     let PIN_DC: DigitalPin = DigitalPin.P8
+     let PIN_RST: DigitalPin = DigitalPin.P16
+
+     /**
+      * Change DC / RST pins if your wiring is different.
+      */
+     //% block="Set TFT pins (DC %dc| RST %rst)"
+     //% dc.defl=DigitalPin.P8 rst.defl=DigitalPin.P16
+     export function setPins(dc: DigitalPin, rst: DigitalPin): void {
+         PIN_DC = dc
+         PIN_RST = rst
+     }
+
      /**
       * TFT Commands
       */
@@ -116,12 +137,10 @@ enum Color {
      // RB-TFT20.ts 파일 내부 예시
     function send(command: number, parameter: Array<number>): void {
         // DC 핀을 P14로 설정하여 명령(0) 모드로 진입
-        pins.digitalWritePin(DigitalPin.P14, 0); 
-        pins.digitalWritePin(DigitalPin.P16, 0); // CS는 GND에 직접 연결했으므로 이 줄은 무시됨
-        pins.spiWrite(command);
+        pins.digitalWritePin(PIN_DC, 0);        pins.spiWrite(command);
 
         // DC 핀을 P14로 설정하여 데이터(1) 모드로 진입
-        pins.digitalWritePin(DigitalPin.P14, 1);
+        pins.digitalWritePin(PIN_DC, 1);
         for (let item of parameter) {
             pins.spiWrite(item);
         }
@@ -144,12 +163,12 @@ enum Color {
       */
      function enterDataMode(): void {
          // Activate command mode
-         pins.digitalWritePin(DigitalPin.P14, 0)
+         pins.digitalWritePin(PIN_DC, 0)
          // select TFT as SPI-target
          //pins.digitalWritePin(DigitalPin.P16, 0)
          pins.spiWrite(TFTCommands.RAMWR)
          // Activate data mode
-         pins.digitalWritePin(DigitalPin.P14, 1)
+         pins.digitalWritePin(PIN_DC, 1)
      }
 
      /*
@@ -157,7 +176,7 @@ enum Color {
       */
      function exitDataMode(): void {
          //pins.digitalWritePin(DigitalPin.P16, 1) // de-elect the TFT as SPI target
-         pins.digitalWritePin(DigitalPin.P14, 0) // command/data = command
+         pins.digitalWritePin(PIN_DC, 0) // command/data = command
      }
 
      /*
@@ -168,24 +187,37 @@ enum Color {
 
      export function init(): void {
 
-        pins.spiPins(DigitalPin.P15, DigitalPin.P5, DigitalPin.P13);
-        pins.spiFrequency(8000000);
+        // Hardware SPI pins (recommended)
+        // spiPins(mosi, miso, sck)
+        pins.spiPins(DigitalPin.P15, DigitalPin.P14, DigitalPin.P13);
+        pins.spiFrequency(8000000); // if unstable, try 4000000
 
-        // DC = P14
-        pins.digitalWritePin(DigitalPin.P14, 1);
+        // Set default states
+        pins.digitalWritePin(PIN_DC, 1);
+        pins.digitalWritePin(PIN_RST, 1);
+
+        // Hardware reset pulse (IMPORTANT: don't tie RST to 3V)
+        pins.digitalWritePin(PIN_RST, 0);
+        basic.pause(20);
+        pins.digitalWritePin(PIN_RST, 1);
+        basic.pause(120);
 
         // Software reset
         send(0x01, []);
         basic.pause(150);
 
+        // Sleep out
         send(0x11, []);
         basic.pause(120);
 
-        send(0x3A, [0x55]); // 16bit color
+        // Color mode: 16-bit RGB565
+        send(0x3A, [0x55]);
 
-        send(0x36, [0x00]); // 방향
+        // Memory Access Control (orientation)
+        // Try 0x00 / 0x60 / 0xC0 / 0xA0 / 0x20 if rotation is wrong
+        send(0x36, [0x00]);
 
-        // --- ST7789 핵심 설정 ---
+        // --- ST7789 common init set (works for many 240x320 panels) ---
         send(0xB2, [0x0C,0x0C,0x00,0x33,0x33]);
         send(0xB7, [0x35]);
         send(0xBB, [0x19]);
@@ -199,8 +231,10 @@ enum Color {
         send(0xE0, [0xD0,0x04,0x0D,0x11,0x13,0x2B,0x3F,0x54,0x4C,0x18,0x0D,0x0B,0x1F,0x23]);
         send(0xE1, [0xD0,0x04,0x0C,0x11,0x13,0x2C,0x3F,0x44,0x51,0x2F,0x1F,0x1F,0x20,0x23]);
 
-        send(0x21, []); // INVON (필요한 패널 많음)
+        // Display inversion ON (many panels require this)
+        send(0x21, []);
 
+        // Display ON
         send(0x29, []);
     }
 

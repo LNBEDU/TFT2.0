@@ -57,7 +57,7 @@ namespace RBTFT20 {
         // SPI pins: SCK=P13, MISO=P14(unused), MOSI=P15
         pins.spiPins(DigitalPin.P13, DigitalPin.P14, DigitalPin.P15)
         pins.spiFrequency(8000000) // if unstable, try 4000000
-        pins.spiFormat(8, 0)        // 8-bit, mode 0
+        pins.spiFormat(8, 0)        // 8-bit, mode 3
     }
 
     function cmd(c: number): void {
@@ -128,7 +128,7 @@ namespace RBTFT20 {
         // 0x00: portrait
         // try 0x60 / 0xC0 / 0xA0 if rotated/mirrored
         cmd(MADCTL)
-        data8(0x00)
+        data8(0x70)
 
         // Most ST7789 IPS modules need inversion ON
         cmd(INVON)

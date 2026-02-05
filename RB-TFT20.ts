@@ -47,9 +47,40 @@ enum Color {
   */
   //% color="#275C6B" icon="\uf26c" weight=95 block="RB-TFT20-V2"
  namespace RBTFT20 {
+
+    // ===== Pin configuration (default for many ST7789 modules on micro:bit) =====
+    // SPI: SCK=P13, MOSI=P15 (MISO not used -> pick any free pin, default P12)
+    let _sck: DigitalPin = DigitalPin.P13
+    let _mosi: DigitalPin = DigitalPin.P15
+    let _miso: DigitalPin = DigitalPin.P12
+
+    // Control pins (adjust to your wiring)
+    let _dc: DigitalPin = DigitalPin.P14
+    let _rst: DigitalPin = DigitalPin.P16
+
+    // If CS is tied to GND, set _useCS=false. If CS is connected to a pin, set _useCS=true.
+    let _cs: DigitalPin = DigitalPin.P16
+    let _useCS: boolean = false
+
+    /**
+     * Set TFT pins (for custom wiring).
+     * If your CS pin is connected to GND, set useCS=false.
+     */
+    //% block="TFT set pins SCK %sck MOSI %mosi DC %dc RST %rst CS %cs useCS %useCS"
+    //% weight=99
+    export function setPins(sck: DigitalPin, mosi: DigitalPin, dc: DigitalPin, rst: DigitalPin, cs: DigitalPin, useCS: boolean): void {
+        _sck = sck
+        _mosi = mosi
+        _dc = dc
+        _rst = rst
+        _cs = cs
+        _useCS = useCS
+    }
+
+
      // Display commands & constants
-     let TFTWIDTH = 320
-     let TFTHEIGHT = 240
+     let TFTWIDTH = 240
+     let TFTHEIGHT = 320
 
      /**
       * TFT Commands
@@ -79,6 +110,8 @@ enum Color {
           VMCTR1 = 0xC5,
           GMCTRP1 = 0xE0,
           GMCTRN1 = 0xE1,
+          FRCTRL2 = 0xC6,
+          PWCTRL1 = 0xD0,
           DELAY = 0xFFFF
       }
 
@@ -112,38 +145,46 @@ enum Color {
       * Send command to display
       */
      // RB-TFT20.ts 파일 내부 예시
-    function send(command: TFTCommands, parameter: Array<number>): void {
-        // DC 핀을 P14로 설정하여 명령(0) 모드로 진입
-        pins.digitalWritePin(DigitalPin.P14, 0); 
-        pins.digitalWritePin(DigitalPin.P16, 0); // CS는 GND에 직접 연결했으므로 이 줄은 무시됨
-        pins.spiWrite(command);
+    function send(command: number, parameter: Array<number>): void {
+        // CS (optional)
+        if (_useCS) pins.digitalWritePin(_cs, 0)
 
-        // DC 핀을 P14로 설정하여 데이터(1) 모드로 진입
-        pins.digitalWritePin(DigitalPin.P14, 1);
+        // Command
+        pins.digitalWritePin(_dc, 0)
+        pins.spiWrite(command)
+
+        // Data
+        pins.digitalWritePin(_dc, 1)
         for (let item of parameter) {
-            pins.spiWrite(item);
+            pins.spiWrite(item)
         }
+
+        if (_useCS) pins.digitalWritePin(_cs, 1)
     }
 
      /*
       * Set pixel address window - minimum and maximum pixel bounds
       */
-     function setWindow(x0: number, y0: number, x1: number, y1: number): void {
-         send(TFTCommands.CASET, [0x00, x0, 0x00, x1])
-         send(TFTCommands.RASET, [0x00, y0, 0x00, y1])
-     }
+    function setWindow(x0: number, y0: number, x1: number, y1: number): void {
+        // ST7789 offset
+        let X_OFFSET = 0
+        let Y_OFFSET = 80
+
+        send(0x2A, [0x00, x0+X_OFFSET, 0x00, x1+X_OFFSET])
+        send(0x2B, [0x00, y0+Y_OFFSET, 0x00, y1+Y_OFFSET])
+    }
 
      /*
       * Data-Mode to transfer data to TFT for further processing
       */
      function enterDataMode(): void {
          // Activate command mode
-         pins.digitalWritePin(DigitalPin.P8, 0)
+         pins.digitalWritePin(DigitalPin.P14, 0)
          // select TFT as SPI-target
          //pins.digitalWritePin(DigitalPin.P16, 0)
          pins.spiWrite(TFTCommands.RAMWR)
          // Activate data mode
-         pins.digitalWritePin(DigitalPin.P8, 1)
+         pins.digitalWritePin(DigitalPin.P14, 1)
      }
 
      /*
@@ -151,7 +192,7 @@ enum Color {
       */
      function exitDataMode(): void {
          //pins.digitalWritePin(DigitalPin.P16, 1) // de-elect the TFT as SPI target
-         pins.digitalWritePin(DigitalPin.P8, 0) // command/data = command
+         pins.digitalWritePin(DigitalPin.P14, 0) // command/data = command
      }
 
      /*
@@ -159,28 +200,57 @@ enum Color {
       */
      //% block="Initialize TFT Display"
      //% weight=100
+
      export function init(): void {
-        // 1. SPI 핀 설정: MOSI=P15, MISO=P5(버튼A), SCK=P13
-        // P14를 DC핀으로 자유롭게 쓰기 위해 MISO 자리에 P5를 넣었습니다.
-        pins.spiPins(DigitalPin.P15, DigitalPin.P5, DigitalPin.P13);
-        
-        // 2. 통신 속도 설정 (1MHz)
-        pins.spiFrequency(1000000);
 
-        // 3. DC 핀(P14) 초기화: 명령 모드 준비
-        pins.digitalWritePin(DigitalPin.P14, 1);
+        if (_useCS) {
+            pins.digitalWritePin(_cs, 1)
+        }
+        pins.spiPins(_mosi, _miso, _sck);
+        pins.spiFormat(8, 3); // IMPORTANT: SPI MODE3 for many ST7789VW modules
+        pins.spiFrequency(4000000);
+// DC = P14
+        pins.digitalWritePin(_dc, 1);
 
-        // 4. LCD 내부 초기화 명령어 전송
-        send(TFTCommands.SWRESET, []);
-        basic.pause(150); // 리셋 후 대기
 
-        send(TFTCommands.SLPOUT, []);
-        basic.pause(150); // 슬립 모드 해제 후 대기
+        // Hardware reset (recommended)
+        pins.digitalWritePin(_rst, 1)
+        basic.pause(5)
+        pins.digitalWritePin(_rst, 0)
+        basic.pause(20)
+        pins.digitalWritePin(_rst, 1)
+        basic.pause(120)
 
-        send(TFTCommands.COLMOD, [0x05]); // 16비트 컬러 설정
-        send(TFTCommands.MADCTL, [0x00]); // 화면 방향 설정
-        send(TFTCommands.DISPON, []);     // 화면 켜기
-     }
+        // Software reset
+        send(0x01, []);
+        basic.pause(150);
+
+        send(0x11, []);
+        basic.pause(120);
+
+        send(0x3A, [0x55]); // 16bit color
+
+        send(0x36, [0x00]); // 방향
+
+        // --- ST7789 핵심 설정 ---
+        send(0xB2, [0x0C,0x0C,0x00,0x33,0x33]);
+        send(0xB7, [0x35]);
+        send(0xBB, [0x19]);
+        send(0xC0, [0x2C]);
+        send(0xC2, [0x01]);
+        send(0xC3, [0x12]);
+        send(0xC4, [0x20]);
+        send(0xC6, [0x0F]);
+        send(0xD0, [0xA4,0xA1]);
+
+        send(0xE0, [0xD0,0x04,0x0D,0x11,0x13,0x2B,0x3F,0x54,0x4C,0x18,0x0D,0x0B,0x1F,0x23]);
+        send(0xE1, [0xD0,0x04,0x0C,0x11,0x13,0x2C,0x3F,0x44,0x51,0x2F,0x1F,0x1F,0x20,0x23]);
+
+        send(0x21, []); // INVON (필요한 패널 많음)
+
+        send(0x29, []);
+    }
+
 
     
 

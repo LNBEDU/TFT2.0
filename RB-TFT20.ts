@@ -1,52 +1,36 @@
-/**
- * Colors
- */
-enum Color {
-   //% block="Black"
-   Black = 0x0000,
-   //% block="Navy"
-   Navy = 0x000F,
-   //% block="DarkGreen"
-   DarkGreen = 0x03E0,
-   //% block="DarkCyan"
-   DarkCyan = 0x03EF,
-   //% block="Maroon"
-   Maroon = 0x7800,
-   //% block="Purple"
-   Purple = 0x780F,
-   //% block="Olive"
-   Olive = 0x7BE0,
-   //% block="LightGrey"
-   LightGrey = 0xC618,
-   //% block="DarkGrey"
-   DarkGrey = 0x7BEF,
-   //% block="Blue"
-   Blue = 0x001F,
-   //% block="Green"
-   Green = 0x07E0,
-   //% block="Cyan"
-   Cyan = 0x07FF,
-   //% block="Red"
-   Red = 0xF800,
-   //% block="Magenta"
-   Magenta = 0xF81F,
-   //% block="Yellow"
-   Yellow = 0xFFE0,
-   //% block="White"
-   White = 0xFFFF,
-   //% block="Orange"
-   Orange = 0xFD20,
-   //% block="GreenYellow"
-   GreenYellow = 0xAFE5,
-   //% block="Pink"
-   Pink = 0xF81F
-}
 
 /**
   * RB-TFT2.0-V2 Block
   */
   //% color="#275C6B" icon="\uf26c" weight=95 block="RB-TFT20-V2"
  namespace RBTFT20 {
+
+    /**
+     * Colors (RGB565)
+     */
+    export enum TFTColor {
+        //% block="Black"
+        Black = 0x0000,
+        //% block="White"
+        White = 0xFFFF,
+        //% block="Red"
+        Red = 0xF800,
+        //% block="Green"
+        Green = 0x07E0,
+        //% block="Blue"
+        Blue = 0x001F,
+        //% block="Yellow"
+        Yellow = 0xFFE0,
+        //% block="Cyan"
+        Cyan = 0x07FF,
+        //% block="Magenta"
+        Magenta = 0xF81F,
+        //% block="Orange"
+        Orange = 0xFD20,
+        //% block="Pink"
+        Pink = 0xF81F
+    }
+
 
     // ===== Pin configuration (default for many ST7789 modules on micro:bit) =====
     // SPI: SCK=P13, MOSI=P15 (MISO not used -> pick any free pin, default P12)
@@ -261,7 +245,7 @@ enum Color {
      //% x.min=1 x.max=130
      //% y.min=1 y.max=162
      //% weight=90
-     export function drawPixel(x: number, y: number, color: Color): void {
+     export function drawPixel(x: number, y: number, color: TFTColor): void {
          setWindow(x, y, x+1, y+1)
          send(TFTCommands.RAMWR, [color >> 8, color])
      }
@@ -275,7 +259,7 @@ enum Color {
      //% x1.min=1 x1.max=130
      //% y1.min=1 y1.max=162
      //% weight=85
-     export function drawLine(x0: number, y0: number, x1: number, y1: number, color: Color): void {
+     export function drawLine(x0: number, y0: number, x1: number, y1: number, color: TFTColor): void {
          let xDelta = x1 - x0
          let yDelta = y1 - y0
 
@@ -312,7 +296,7 @@ enum Color {
      //% x.min=1 x.max=130
      //% y.min=1 y.max=162
      //% weight=80
-     export function drawRectangle(x: number, y: number, width: number, height: number, color: Color): void {
+     export function drawRectangle(x: number, y: number, width: number, height: number, color: TFTColor): void {
 
          // Convert color
          let hiColor = (color >> 8) % 256
@@ -339,7 +323,7 @@ enum Color {
      //% x.min=1 x.max=130
      //% y.min=1 y.max=162
      //% weight=75
-     export function drawCircle(x: number, y: number, radius: number, color: Color): void {
+     export function drawCircle(x: number, y: number, radius: number, color: TFTColor): void {
         for(let y1 = -radius ; y1 <= 0 ; y1++) {
             for(let x1 = -radius ; x1 <= 0 ; x1++) {
                 if((x1 * x1 + y1 * y1) <= (radius * radius)) {
@@ -360,7 +344,7 @@ enum Color {
       //% x.min=1 x.max=130
       //% y.min=1 y.max=162
       //% zoom.min=1 zoom.max=5
-      export function showString(text: string, x: number, y:number, zoom: number, color: Color, bgColor: Color): void {
+      export function showString(text: string, x: number, y:number, zoom: number, color: TFTColor, bgColor: TFTColor): void {
           let hiColor = (color >> 8) % 256
           let loColor = color % 256
           let bgHiColor = (bgColor >> 8) % 256

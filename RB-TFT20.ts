@@ -152,7 +152,7 @@
     function setWindow(x0: number, y0: number, x1: number, y1: number): void {
         // ST7789 offset
         let X_OFFSET = 0
-        let Y_OFFSET = 80
+        let Y_OFFSET = 0
 
         send(0x2A, [0x00, x0+X_OFFSET, 0x00, x1+X_OFFSET])
         send(0x2B, [0x00, y0+Y_OFFSET, 0x00, y1+Y_OFFSET])
@@ -214,7 +214,7 @@
 
         send(0x3A, [0x55]); // 16bit color
 
-        send(0x36, [0x00]); // 방향
+        send(0x36, [0x00]); // MADCTL: 0x00 portrait, try 0x60 for landscape
 
         // --- ST7789 핵심 설정 ---
         send(0xB2, [0x0C,0x0C,0x00,0x33,0x33]);

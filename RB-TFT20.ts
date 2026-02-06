@@ -113,10 +113,12 @@ namespace RBTFT20 {
     }
 
     function setWindow(x0: number, y0: number, x1: number, y1: number): void {
-
-    send(0x2A, [0x00, x0, 0x00, x1])
-    send(0x2B, [0x00, y0, 0x00, y1])
-    send(0x2C, [])
+        const xs = x0 + _xOffset
+        const xe = x1 + _xOffset
+        const ys = y0 + _yOffset
+        const ye = y1 + _yOffset
+        send(TFTCommands.CASET, [hi(xs), lo(xs), hi(xe), lo(xe)])
+        send(TFTCommands.RASET, [hi(ys), lo(ys), hi(ye), lo(ye)])
     }
 
     function hwReset(): void {
@@ -188,13 +190,6 @@ namespace RBTFT20 {
 
         send(TFTCommands.DISPON, [])
         basic.pause(120)
-
-        send(0x36, [0x00])     // MADCTL (memory direction reset)
-        send(0x3A, [0x05])     // RGB565
-
-        // ⭐ 핵심: vertical scroll start address = 40
-        send(0x37, [0x00, 40]) // VSCRS
-
 
         _inited = true
     }

@@ -34,7 +34,7 @@ namespace RBTFT20 {
     const TFTHEIGHT = 320
 
     // SPI settings (micro:bit + long wires -> keep it conservative)
-    const SPI_FREQ_HZ = 8000000 // 1 MHz
+    const SPI_FREQ_HZ = 1_000_000 // 1 MHz
 
     // -------------------------
     // ST7789 commands

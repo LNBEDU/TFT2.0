@@ -56,9 +56,7 @@ namespace RBTFT20 {
     let _sck: DigitalPin = DigitalPin.P13
     let _mosi: DigitalPin = DigitalPin.P15
     let _dc: DigitalPin = DigitalPin.P14
-    let _rst: DigitalPin = DigitalPin.P16
-    let _cs: DigitalPin = DigitalPin.P12
-    let _useCS = false
+    
 
     // Offset (some modules need this; keep configurable)
     let _xOffset = 0
@@ -130,24 +128,15 @@ namespace RBTFT20 {
         send(TFTCommands.RASET, [hi(ys), lo(ys), hi(ye), lo(ye)])
     }
 
-    function hwReset(): void {
-        pins.digitalWritePin(_rst, 0)
-        basic.pause(50)
-        pins.digitalWritePin(_rst, 1)
-        basic.pause(120)
-    }
+    
 
     /**
      * (Optional) change wiring
      */
-    export function setPins(sck: DigitalPin, mosi: DigitalPin, dc: DigitalPin, rst: DigitalPin, cs: DigitalPin, useCS: boolean): void {
+    export function setPins(sck: DigitalPin, mosi: DigitalPin, dc: DigitalPin, cs: DigitalPin): void {
         _sck = sck
         _mosi = mosi
         _dc = dc
-        _rst = rst
-        _cs = cs
-        _useCS = useCS
-        _inited = false
     }
 
     /**
@@ -178,8 +167,7 @@ namespace RBTFT20 {
         pins.digitalWritePin(_dc, 1)
         //if (_useCS) pins.digitalWritePin(_cs, 1)
 
-        hwReset()
-
+        
         // Basic init
         send(TFTCommands.SWRESET, [])
         basic.pause(150)
@@ -299,44 +287,6 @@ namespace RBTFT20 {
         }
     }
 
-      /*
-      * Draw a straight line from one point to another
-      */
-     //% block="Draw line from x0:%x0|y0:%y0 to x1:%x1|y:%y1 with color:%color"
-     //% x0.min=1 x0.max=130
-     //% y0.min=1 y0.max=162
-     //% x1.min=1 x1.max=130
-     //% y1.min=1 y1.max=162
-     //% weight=85
-     export function drawLine(x0: number, y0: number, x1: number, y1: number, color: Color): void {
-         let xDelta = x1 - x0
-         let yDelta = y1 - y0
-
-         if (Math.abs(yDelta) > Math.abs(xDelta)) {
-             let ySteps = Math.abs(yDelta)
-             let xIncrement = xDelta == 0 ? 0 : xDelta / ySteps
-             let yIncrement = yDelta > 0 ? 1 : -1
-
-             let x = x0
-             let y = y0
-             for (let steps = 0 ; steps <= ySteps ; steps++) {
-                 drawPixel(x, y, color)
-             }
-         }
-         else {
-             let xSteps = Math.abs(xDelta)
-             let yIncrement = yDelta == 0 ? 0 : yDelta / xSteps
-             let xIncrement = xDelta > 0 ? 1 : -1
-
-             let y = y0
-             let x = x0
-             for (let steps = 0 ; steps <= xSteps ; steps++) {
-                 drawPixel(x, y, color)
-                 y = y + yIncrement
-                 x = x + xIncrement
-             }
-         }
-     }
 
       /*
       * Display string at given coordinates

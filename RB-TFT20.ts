@@ -41,7 +41,7 @@ namespace RBTFT20 {
     // Panel size (your module uses a 240x240 panel centered in ST7789 GRAM)
     // We expose it as 240x240 and use default Y offset = 80.
     const TFTWIDTH = 240
-    const TFTHEIGHT = 240
+    const TFTHEIGHT = 320
 
     // Wiring defaults (as you confirmed)
     let _sck: DigitalPin = DigitalPin.P13

@@ -55,7 +55,7 @@ namespace RBTFT20 {
     // Wiring defaults (as you confirmed)
     let _sck: DigitalPin = DigitalPin.P13
     let _mosi: DigitalPin = DigitalPin.P15
-    let _dc: DigitalPin = DigitalPin.P14
+    let _dc: DigitalPin = DigitalPin.P8
     let _rst: DigitalPin = DigitalPin.P16
     let _cs: DigitalPin = DigitalPin.P12
     let _useCS = false
@@ -171,7 +171,7 @@ namespace RBTFT20 {
         // IMPORTANT:
         // DC is on P14 (shared with MISO), so NEVER assign MISO to P14.
         // We don't read from TFT, so use a dummy pin for MISO (P2).
-        pins.spiPins(_mosi, DigitalPin.P2, _sck)
+        pins.spiPins(_mosi, DigitalPin.P14, _sck)
         pins.spiFormat(8, 3)          // MODE3 (works for your panel)
         pins.spiFrequency(8000000)    // 8MHz stable on micro:bit
 

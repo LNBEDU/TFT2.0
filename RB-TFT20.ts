@@ -38,9 +38,10 @@ enum Color {
 
 //% color=#1E90FF icon="\uf108" block="RB-TFT20-V2"
 namespace RBTFT20 {
-    // Panel size (ST7789 240x320)
+    // Panel size (your module uses a 240x240 panel centered in ST7789 GRAM)
+    // We expose it as 240x240 and use default Y offset = 80.
     const TFTWIDTH = 240
-    const TFTHEIGHT = 320
+    const TFTHEIGHT = 240
 
     // Wiring defaults (as you confirmed)
     let _sck: DigitalPin = DigitalPin.P13
@@ -52,7 +53,7 @@ namespace RBTFT20 {
 
     // Offset (some modules need this; keep configurable)
     let _xOffset = 0
-    let _yOffset = 0
+    let _yOffset = 80
 
     let _inited = false
 
@@ -141,7 +142,7 @@ namespace RBTFT20 {
     }
 
     /**
-     * Some modules need display memory offsets. Default is 0,0.
+     * Some modules need display memory offsets. Your panel needs Y offset = 80 by default.
      */
     //% block="Set display offset x:%x y:%y"
     //% weight=95
@@ -200,7 +201,7 @@ namespace RBTFT20 {
     //% x.min=0 x.max=239
     //% y.min=0 y.max=319
     //% w.min=1 w.max=240
-    //% h.min=1 h.max=320
+    //% h.min=1 h.max=240
     //% weight=80
     export function drawRectangle(x: number, y: number, w: number, h: number, color: Color): void {
         init()

@@ -2,46 +2,30 @@
  * Color definitions (RGB565)
  */
 enum Color {
-    //% block="Black"
     Black = 0x0000,
-    //% block="Navy"
     Navy = 0x000F,
-    //% block="DarkGreen"
     DarkGreen = 0x03E0,
-    //% block="DarkCyan"
     DarkCyan = 0x03EF,
-    //% block="Maroon"
     Maroon = 0x7800,
-    //% block="Purple"
     Purple = 0x780F,
-    //% block="Olive"
     Olive = 0x7BE0,
-    //% block="LightGrey"
     LightGrey = 0xC618,
-    //% block="DarkGrey"
     DarkGrey = 0x7BEF,
-    //% block="Blue"
     Blue = 0x001F,
-    //% block="Green"
     Green = 0x07E0,
-    //% block="Cyan"
     Cyan = 0x07FF,
-    //% block="Red"
     Red = 0xF800,
-    //% block="Magenta"
     Magenta = 0xF81F,
-    //% block="Yellow"
     Yellow = 0xFFE0,
-    //% block="White"
     White = 0xFFFF
 }
 
 //% color=#1E90FF icon="\uf108" block="RB-TFT20-V2"
 namespace RBTFT20 {
-    // Panel size (your module uses a 240x240 panel centered in ST7789 GRAM)
-    // We expose it as 240x240 and use default Y offset = 80.
+    // Panel size (your module uses a 240x320 panel centered in ST7789 GRAM)
+    // We expose it as 240x320 and use default Y offset = 80.
     const TFTWIDTH = 240
-    const TFTHEIGHT = 240
+    const TFTHEIGHT = 320
 
     // Wiring defaults (as you confirmed)
     let _sck: DigitalPin = DigitalPin.P13
@@ -53,70 +37,70 @@ namespace RBTFT20 {
 
     // Offset (some modules need this; keep configurable)
     let _xOffset = 0
-    let _yOffset = 40
+    let _yOffset = 0
 
     let _inited = false
 
     enum TFTCommands {
-        SWRESET = 0x01,
-        SLPOUT = 0x11,
-        INVOFF = 0x20,
-        INVON = 0x21,
-        DISPON = 0x29,
-        CASET = 0x2A,
-        RASET = 0x2B,
-        RAMWR = 0x2C,
-        MADCTL = 0x36,
-        COLMOD = 0x3A
+        SWRESET = 0x01, //Software reset
+        SLPOUT = 0x11, //Sleep out
+        INVOFF = 0x20, //Display inversion off
+        INVON = 0x21,  //Display inversion on  
+        DISPON = 0x29, //Display on
+        CASET = 0x2A, //Column address set
+        RASET = 0x2B, //Row address set   
+        RAMWR = 0x2C, //Memory write
+        MADCTL = 0x36, //Memory data access control
+        COLMOD = 0x3A //Interface pixel format
     }
 
     function hi(v: number): number { return (v >> 8) & 0xFF }
     function lo(v: number): number { return v & 0xFF }
 
-    function csLow(): void {
+    /*function csLow(): void {
         if (_useCS) pins.digitalWritePin(_cs, 0)
     }
     function csHigh(): void {
         if (_useCS) pins.digitalWritePin(_cs, 1)
-    }
+    }*/
 
     // Send single command byte
     function writeCommand(cmd: number): void {
-        csLow()
+        //csLow()
         pins.digitalWritePin(_dc, 0)
         pins.spiWrite(cmd)
-        csHigh()
+        //csHigh()
     }
 
     // Send command + parameter bytes (short transfers)
     function send(cmd: number, params: number[]): void {
-        csLow()
+        //csLow()
         pins.digitalWritePin(_dc, 0)
         pins.spiWrite(cmd)
         if (params && params.length) {
             pins.digitalWritePin(_dc, 1)
             for (let b of params) pins.spiWrite(b)
         }
-        csHigh()
+        //csHigh()
     }
 
     // For pixel streaming: keep CS low and DC high while sending lots of bytes
     function beginPixels(): void {
-        csLow()
+        //csLow()
         pins.digitalWritePin(_dc, 0)
         pins.spiWrite(TFTCommands.RAMWR)
         pins.digitalWritePin(_dc, 1)
     }
     function endPixels(): void {
-        csHigh()
+        //csHigh()
         pins.digitalWritePin(_dc, 0)
     }
 
     function setWindow(x0: number, y0: number, x1: number, y1: number): void {
-        const xs = x0 + _xOffset
-        const xe = x1 + _xOffset
-        const ys = y0 + _yOffset
-        const ye = y1 + _yOffset
+        const xs = x0 
+        const xe = x1 
+        const ys = y0 
+        const ye = y1 
         send(TFTCommands.CASET, [hi(xs), lo(xs), hi(xe), lo(xe)])
         send(TFTCommands.RASET, [hi(ys), lo(ys), hi(ye), lo(ye)])
     }
@@ -167,7 +151,7 @@ namespace RBTFT20 {
         pins.spiFrequency(8000000)    // 8MHz stable on micro:bit
 
         pins.digitalWritePin(_dc, 1)
-        if (_useCS) pins.digitalWritePin(_cs, 1)
+        //if (_useCS) pins.digitalWritePin(_cs, 1)
 
         hwReset()
 

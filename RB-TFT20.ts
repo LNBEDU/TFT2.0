@@ -53,7 +53,7 @@ namespace RBTFT20 {
 
     // Offset (some modules need this; keep configurable)
     let _xOffset = 0
-    let _yOffset = 80
+    let _yOffset = 40
 
     let _inited = false
 
@@ -199,7 +199,7 @@ namespace RBTFT20 {
      */
     //% block="Draw rectangle at x:%x y:%y with width:%w height:%h color:%color"
     //% x.min=0 x.max=239
-    //% y.min=0 y.max=319
+    //% y.min=0 y.max=239
     //% w.min=1 w.max=240
     //% h.min=1 h.max=240
     //% weight=80
@@ -243,7 +243,7 @@ namespace RBTFT20 {
      */
     //% block="Draw single pixel at x:%x y:%y with color:%color"
     //% x.min=0 x.max=239
-    //% y.min=0 y.max=319
+    //% y.min=0 y.max=239
     //% weight=75
     export function drawPixel(x: number, y: number, color: Color): void {
         init()
@@ -262,7 +262,7 @@ namespace RBTFT20 {
      */
     //% block="Draw circle at x:%x y:%y with radius:%r and color:%color"
     //% x.min=0 x.max=239
-    //% y.min=0 y.max=319
+    //% y.min=0 y.max=239
     //% r.min=1 r.max=160
     //% weight=78
     export function drawCircle(x0: number, y0: number, r: number, color: Color): void {

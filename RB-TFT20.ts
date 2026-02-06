@@ -55,10 +55,10 @@ namespace RBTFT20 {
     // Wiring defaults (as you confirmed)
     let _sck: DigitalPin = DigitalPin.P13
     let _mosi: DigitalPin = DigitalPin.P15
-    let _dc: DigitalPin = DigitalPin.P8
+    let _dc: DigitalPin = DigitalPin.P14
     let _rst: DigitalPin = DigitalPin.P16
     let _cs: DigitalPin = DigitalPin.P12
-    let _miso: DigitalPin = DigitalPin.P14  
+    let _miso: DigitalPin = DigitalPin.P2  
     let _useCS = false
 
     // Offset (some modules need this; keep configurable)

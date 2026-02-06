@@ -53,7 +53,7 @@ namespace RBTFT20 {
 
     // Offset (some modules need this; keep configurable)
     let _xOffset = 0
-    let _yOffset = 40
+    let _yOffset = 0
 
     let _inited = false
 

@@ -139,9 +139,8 @@ namespace RBTFT20 {
             pins.spiTransfer(buf, null)
         }
 
-}
+    }
     
-
 
 
     // For pixel streaming: keep CS low and DC high while sending lots of bytes
@@ -155,16 +154,6 @@ namespace RBTFT20 {
         //csHigh()
         pins.digitalWritePin(_dc, 0)
     }
-
-    /*
-    function setWindow(x0: number, y0: number, x1: number, y1: number): void {
-        const xs = x0 
-        const xe = x1 
-        const ys = y0 
-        const ye = y1 
-        send(TFTCommands.CASET, [hi(xs), lo(xs), hi(xe), lo(xe)])
-        send(TFTCommands.RASET, [hi(ys), lo(ys), hi(ye), lo(ye)])
-    }*/
 
     function setWindow(x0: number, y0: number, x1: number, y1: number) {
 
@@ -187,8 +176,6 @@ namespace RBTFT20 {
     // RAMWR (픽셀 쓰기 시작)
         sendBuf(TFTCommands.RAMWR, null)
     }
-
-
     
 
     /**
@@ -252,43 +239,6 @@ namespace RBTFT20 {
         _inited = true
     }
 
-    /**
-     * Fill a rectangle (FAST, streaming)
-     */
-    //% block="Draw rectangle at x:%x y:%y with width:%w height:%h color:%color"
-    //% x.min=0 x.max=239
-    //% y.min=0 y.max=239
-    //% w.min=1 w.max=240
-    //% h.min=1 h.max=240
-    //% weight=80
-
-    /*
-    export function drawRectangle(x: number, y: number, w: number, h: number, color: Color): void {
-        init()
-        if (w <= 0 || h <= 0) return
-
-        let x1 = x + w - 1
-        let y1 = y + h - 1
-        if (x < 0) x = 0
-        if (y < 0) y = 0
-        if (x1 >= TFTWIDTH) x1 = TFTWIDTH - 1
-        if (y1 >= TFTHEIGHT) y1 = TFTHEIGHT - 1
-        if (x > x1 || y > y1) return
-
-        setWindow(x, y, x1, y1)
-
-        const hiC = hi(color)
-        const loC = lo(color)
-        const count = (x1 - x + 1) * (y1 - y + 1)
-
-        beginPixels()
-        for (let i = 0; i < count; i++) {
-            pins.spiWrite(hiC)
-            pins.spiWrite(loC)
-        }
-        endPixels()
-    } */
-
     export function drawRectangle(x: number, y: number, w: number, h: number, color: Color): void {
         init()
         if (w <= 0 || h <= 0) return
@@ -324,7 +274,7 @@ namespace RBTFT20 {
     }
      
 
-    function fillRect(x: number, y: number, w: number, h: number, color: number) {
+    export function fillRect(x: number, y: number, w: number, h: number, color: number) {
 
         setWindow(x, y, x + w - 1, y + h - 1)
 
@@ -334,13 +284,36 @@ namespace RBTFT20 {
         let hiC = hi(color)
         let loC = lo(color)
 
-    for (let i = 0; i < pixels; i++) {
+        for (let i = 0; i < pixels; i++) {
         buf[i * 2] = hiC
         buf[i * 2 + 1] = loC
+        }
+
+        sendData(buf) // 🔥 한방 전송
     }
 
-    sendData(buf) // 🔥 한방 전송
-}
+    export function fillCircle(x0: number, y0: number, r: number, color: Color): void {
+        init()
+        let x = r
+        let y = 0
+        let err = 0
+
+        while (x >= y) {
+            // 각 y에 대해 가로줄 4개를 그려 원을 채움
+            drawRectangle(x0 - x, y0 + y, 2 * x + 1, 1, color)
+            drawRectangle(x0 - x, y0 - y, 2 * x + 1, 1, color)
+            drawRectangle(x0 - y, y0 + x, 2 * y + 1, 1, color)
+            drawRectangle(x0 - y, y0 - x, 2 * y + 1, 1, color)
+
+            y++
+            err += 1 + 2 * y
+            if (2 * (err - x) + 1 > 0) {
+                x--
+                err += 1 - 2 * x
+            }
+        }
+    }
+
 
 
     /**

@@ -95,6 +95,24 @@ namespace RBTFT20 {
         //csHigh()
     }
 
+    function spiWriteBuffer(buf: Buffer) {
+        pins.spiTransfer(buf, null)
+    }
+
+    function sendCmd(cmd: number) {
+        pins.digitalWritePin(_dc, 0) // command mode
+        let b = pins.createBuffer(1)
+        b[0] = cmd
+        spiWriteBuffer(b)
+    }
+
+    function sendData(data: Buffer) {
+        pins.digitalWritePin(_dc, 1) // data mode
+        spiWriteBuffer(data)
+    }
+
+
+    
     // Send command + parameter bytes (short transfers)
     function send(cmd: number, params: number[]): void {
         //csLow()
@@ -105,7 +123,26 @@ namespace RBTFT20 {
             for (let b of params) pins.spiWrite(b)
         }
         //csHigh()
-    }
+    } 
+
+    function sendBuf(cmd: number, buf: Buffer): void {
+
+        // ---- 명령 전송 ----
+        pins.digitalWritePin(_dc, 0)
+        let cbuf = pins.createBuffer(1)
+        cbuf[0] = cmd
+        pins.spiTransfer(cbuf, null)
+
+        // ---- 데이터 전송 ----
+        if (buf && buf.length) {
+            pins.digitalWritePin(_dc, 1)
+            pins.spiTransfer(buf, null)
+        }
+
+}
+    
+
+
 
     // For pixel streaming: keep CS low and DC high while sending lots of bytes
     function beginPixels(): void {
@@ -119,6 +156,7 @@ namespace RBTFT20 {
         pins.digitalWritePin(_dc, 0)
     }
 
+    /*
     function setWindow(x0: number, y0: number, x1: number, y1: number): void {
         const xs = x0 
         const xe = x1 
@@ -126,14 +164,37 @@ namespace RBTFT20 {
         const ye = y1 
         send(TFTCommands.CASET, [hi(xs), lo(xs), hi(xe), lo(xe)])
         send(TFTCommands.RASET, [hi(ys), lo(ys), hi(ye), lo(ye)])
+    }*/
+
+    function setWindow(x0: number, y0: number, x1: number, y1: number) {
+
+         let buf = pins.createBuffer(4)
+
+        // CASET (X range)
+        buf[0] = hi(x0)
+        buf[1] = lo(x0)
+        buf[2] = hi(x1)
+        buf[3] = lo(x1)
+        sendBuf(TFTCommands.CASET, buf)
+
+        // RASET (Y range)
+        buf[0] = hi(y0)
+        buf[1] = lo(y0)
+        buf[2] = hi(y1)
+        buf[3] = lo(y1)
+        sendBuf(TFTCommands.RASET, buf)
+
+    // RAMWR (픽셀 쓰기 시작)
+        sendBuf(TFTCommands.RAMWR, null)
     }
+
 
     
 
     /**
      * (Optional) change wiring
      */
-    export function setPins(sck: DigitalPin, mosi: DigitalPin, dc: DigitalPin): void {
+    export function setPins(sck: DigitalPin, mosi: DigitalPin, dc: DigitalPin, cs: DigitalPin): void {
         _sck = sck
         _mosi = mosi
         _dc = dc
@@ -200,6 +261,8 @@ namespace RBTFT20 {
     //% w.min=1 w.max=240
     //% h.min=1 h.max=240
     //% weight=80
+
+    /*
     export function drawRectangle(x: number, y: number, w: number, h: number, color: Color): void {
         init()
         if (w <= 0 || h <= 0) return
@@ -224,7 +287,61 @@ namespace RBTFT20 {
             pins.spiWrite(loC)
         }
         endPixels()
+    } */
+
+    export function drawRectangle(x: number, y: number, w: number, h: number, color: Color): void {
+        init()
+        if (w <= 0 || h <= 0) return
+
+        let x1 = x + w - 1
+        let y1 = y + h - 1
+        if (x < 0) x = 0
+        if (y < 0) y = 0
+        if (x1 >= TFTWIDTH) x1 = TFTWIDTH - 1
+        if (y1 >= TFTHEIGHT) y1 = TFTHEIGHT - 1
+        if (x > x1 || y > y1) return
+
+        setWindow(x, y, x1, y1)
+
+        const hiC = hi(color)
+        const loC = lo(color)
+
+        const width = (x1 - x + 1)
+        const height = (y1 - y + 1)
+
+        // 라인 버퍼: 한 줄만 담아서 반복 전송 (RAM 절약 + 빠름)
+        let lineBuf = pins.createBuffer(width * 2)
+        for (let i = 0; i < width; i++) {
+            lineBuf[i * 2] = hiC
+            lineBuf[i * 2 + 1] = loC
+        }
+
+        beginPixels()
+        for (let row = 0; row < height; row++) {
+            pins.spiTransfer(lineBuf, null)  // ⭐ 한 줄을 한 번에 전송
+        }
+        endPixels()
     }
+     
+
+    function fillRect(x: number, y: number, w: number, h: number, color: number) {
+
+        setWindow(x, y, x + w - 1, y + h - 1)
+
+        let pixels = w * h
+        let buf = pins.createBuffer(pixels * 2)
+
+        let hiC = hi(color)
+        let loC = lo(color)
+
+    for (let i = 0; i < pixels; i++) {
+        buf[i * 2] = hiC
+        buf[i * 2 + 1] = loC
+    }
+
+    sendData(buf) // 🔥 한방 전송
+}
+
 
     /**
      * Clear screen (fill black)
@@ -262,6 +379,7 @@ namespace RBTFT20 {
     //% y.min=0 y.max=239
     //% r.min=1 r.max=160
     //% weight=78
+    /*
     export function drawCircle(x0: number, y0: number, r: number, color: Color): void {
         init()
         let x = r
@@ -285,7 +403,122 @@ namespace RBTFT20 {
                 err += 1 - 2 * x
             }
         }
+    } */
+
+     // 2바이트 픽셀 버퍼 재사용
+    let pxBuf = pins.createBuffer(2)
+
+    function drawPixelFast(x: number, y: number, color: number) {
+        if (x < 0 || y < 0 || x >= TFTWIDTH || y >= TFTHEIGHT) return
+
+        setWindow(x, y, x, y)          // CASET/RASET/RAMWR
+        pxBuf[0] = hi(color)
+        pxBuf[1] = lo(color)
+
+        beginPixels()
+        pins.spiTransfer(pxBuf, null)  // ⭐ 2바이트도 transfer로 (spiWrite 2번보다 낫다)
+        endPixels()
     }
+   
+        
+
+
+      /*
+      * Display string at given coordinates
+      */
+      //% block="Show string:%string at x:%x and y:%y with zoom-level:%zoom color:%color and background color:%bgcolor"
+      //% weight=70
+      //% x.min=1 x.max=130
+      //% y.min=1 y.max=162
+      //% zoom.min=1 zoom.max=5
+      export function showString(text: string, x: number, y:number, zoom: number, color: Color, bgColor: Color): void {
+          let hiColor = (color >> 8) % 256
+          let loColor = color % 256
+          let bgHiColor = (bgColor >> 8) % 256
+          let bgLoColor = bgColor % 256
+          let zoomFactor = zoom
+          let index = 0
+          let colsel = 0
+          let unicode = 0
+          let charIndex = 0
+
+          for (let stringPos = 0 ; stringPos < text.length ; stringPos++) {
+            // Get character at current string position and find the corresponding unicode representation
+            charIndex = text.charCodeAt(stringPos)
+            if (charIndex < 20) {
+                unicode = fontOne[charIndex]
+            }
+            else if (charIndex < 40) {
+                unicode = fontTwo[charIndex - 20]
+            }
+            else if (charIndex < 60) {
+                unicode = fontThree[charIndex - 40]
+            }
+            else if (charIndex < 80) {
+                unicode = fontFour[charIndex - 60]
+            }
+            else if (charIndex < 100) {
+                unicode = fontFive[charIndex - 80]
+            }
+            else if (charIndex < 120) {
+                unicode = fontSix[charIndex - 100]
+            }
+            else if (charIndex < 140) {
+                unicode = fontSeven[charIndex - 120]
+            }
+
+
+             /*
+      * Data-Mode to transfer data to TFT for further processing
+      */
+     function enterDataMode(): void {
+         // Activate command mode
+         pins.digitalWritePin(DigitalPin.P14, 0)
+         // select TFT as SPI-target
+         //pins.digitalWritePin(DigitalPin.P16, 0)
+         pins.spiWrite(TFTCommands.RAMWR)
+         // Activate data mode
+         pins.digitalWritePin(DigitalPin.P14, 1)
+     }
+
+
+            // Set position and go into data mode
+            setWindow (x + stringPos * 5 * zoomFactor, y, x + stringPos * 5 * zoomFactor + 5 * zoomFactor - 1, y + 5 * zoomFactor -1)
+            enterDataMode()
+
+            // write character to display
+            for (let indexY = 0 ; indexY < 5 ; indexY++) {
+                for (let a = 0 ; a < zoomFactor ; a++) {
+                    for (let indexX = 0 ; indexX < 5 ; indexX++) {
+                        index = indexY + indexX * 5
+                        colsel = (unicode & (1 << index))
+                        for (let b = 0 ; b < zoomFactor ; b++) {
+                            if (colsel) {
+                                pins.spiWrite(hiColor);
+                                pins.spiWrite(loColor);
+                            }
+                            else {
+                                pins.spiWrite(bgHiColor);
+                                pins.spiWrite(bgLoColor);
+                            }
+                        }
+                    }
+                }
+            }
+
+            exitDataMode();
+          }
+      }
+
+       /*
+      * Finish data-mode and set back to command-mode
+      */
+     function exitDataMode(): void {
+         //pins.digitalWritePin(DigitalPin.P16, 1) // de-elect the TFT as SPI target
+         pins.digitalWritePin(DigitalPin.P14, 0) // command/data = command
+     }
+
+
 
 
 

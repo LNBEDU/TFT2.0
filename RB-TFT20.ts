@@ -133,7 +133,7 @@ namespace RBTFT20 {
     /**
      * (Optional) change wiring
      */
-    export function setPins(sck: DigitalPin, mosi: DigitalPin, dc: DigitalPin, cs: DigitalPin): void {
+    export function setPins(sck: DigitalPin, mosi: DigitalPin, dc: DigitalPin): void {
         _sck = sck
         _mosi = mosi
         _dc = dc
